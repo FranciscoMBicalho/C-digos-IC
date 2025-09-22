@@ -1,0 +1,13 @@
+ Arquivos de objetos
+*.o
+*.obj
+
+# Arquivos de compilação
+*.out
+*.exe
+programa
+
+# Diretórios de build
+/build/
+/bin/
+/obj/
