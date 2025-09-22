@@ -27,6 +27,12 @@
 #define MAX_DELTA_ACC_LAT 3.0
 #define MIN_DELTA_ACC_LAT 0.0
 
+// Caminho dos Arquivos .csv
+
+#define PATH_DATA_CSV "arquivos_csv/data.csv"
+#define PATH_TRAINING_CSV "arquivos_csv/training.csv"
+#define PATH_VALIDATION_CSV "arquivos_csv/validation.csv"
+
 // Estrutura para armazenar os dados
 typedef struct {
     double speed;
@@ -55,7 +61,8 @@ typedef struct {
 // Protótipos das funções
 int load_data(const char* filename, DataPoint* data);
 void normalize_data(DataPoint* data, int num_samples, double normalized_inputs[][NUM_FEATURES]);
-void randomize_matrix();
+void randomize_matrix(double inputs[][NUM_FEATURES], int* outputs,int num_samples,Dataset* train_data, Dataset* val_data);
+void write_csv_train_val(const char* train_file, const char* val_file,Dataset* train_data, Dataset* val_data);
 void split_data(double inputs[][NUM_FEATURES], int* outputs, int num_samples, 
                 Dataset* train_data, Dataset* val_data, double train_ratio);
 void initialize_params(ANFISParams* params, double inputs[][NUM_FEATURES], int num_samples);

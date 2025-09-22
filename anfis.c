@@ -298,34 +298,53 @@ void save_results(double* mse_history, double accuracy, double error_percent) {
     printf("Histórico de treinamento salvo em: training_results.csv\n");
 }
 
-void randomize_matrix()
+void randomize_matrix(double inputs[][NUM_FEATURES], int* outputs,int num_samples,Dataset* train_data, Dataset* val_data)
 {
-    const char* input_file = "arquivos_csv/data.csv";
-    const char* train_file = "arquivos_csv/training.csv";
-    const char* val_file = "arquivos_csv/validation.csv";
-    DataPoint data[MAX_SAMPLES];
-    int total_samples = load_data(input_file, data);
+    //DataPoint data[MAX_SAMPLES];
+    //int total_samples = load_data(input_file, data);
 
-    if (total_samples <= 0) {
-        printf("Erro ao carregar dados de %s\n", input_file);
-        return;
-    }
+    //if (total_samples <= 0) {
+        //printf("Erro ao carregar dados de %s\n", input_file);
+        //return;
+    //}
 
     // Embaralhar os índices
     int indices[MAX_SAMPLES];
-    for (int i = 0; i < total_samples; i++) indices[i] = i;
+    for (int i = 0; i < num_samples; i++) indices[i] = i;
     //srand((unsigned int)time(NULL));
-    for (int i = total_samples - 1; i > 0; i--) {
+    for (int i = num_samples - 1; i > 0; i--) {
         int j = rand() % (i + 1);
         int tmp = indices[i];
         indices[i] = indices[j];
         indices[j] = tmp;
     }
 
-    int train_count = (int)(total_samples * 0.7);
+    int train_count = (int)(num_samples * 0.7);
+    train_data->num_samples = train_count;
+    val_data->num_samples = num_samples - train_count;
+
+    // Escrever em train_data
+
+    for (int i = 0; i < train_data->num_samples; i++) {
+        int idx = indices[i];
+        for (int j = 0; j < NUM_FEATURES; j++) {
+            train_data->inputs[i][j] = inputs[idx][j];
+        }
+        train_data->outputs[i] = outputs[idx];
+    }
+
+    // Escrever em val_data
+
+    for (int i = 0; i < val_data->num_samples; i++) {
+        int idx = indices[i];
+        for (int j = 0; j < NUM_FEATURES; j++) {
+            val_data->inputs[i][j] = inputs[idx][j];
+        }
+        val_data->outputs[i] = outputs[idx];
+    }
 
     // Escrever training_csv.csv
-    FILE* ftrain = fopen(train_file, "w");
+    /*FILE* ftrain = fopen(train_file, "w");
     if (!ftrain) {
         printf("Erro ao criar %s\n", train_file);
         return;
@@ -364,5 +383,97 @@ void randomize_matrix()
     fclose(fval);
 
     printf("Dados embaralhados e divididos em %s (%d linhas) e %s (%d linhas)\n",
-        train_file, train_count, val_file, total_samples - train_count);
+        train_file, train_count, val_file, total_samples - train_count);*/
 }
+
+void write_csv_train_val(const char* train_file, const char* val_file,Dataset* train_data, Dataset* val_data)
+{
+    // Escrever training.csv
+    FILE* ftrain = fopen(train_file, "w");
+    if (!ftrain) {
+        printf("Erro ao criar %s\n", train_file);
+        return;
+    }
+    // Cabeçalho igual ao arquivos.csv/data.csv
+    fprintf(ftrain, "speed,acc_norm,engine_speed,throttle_position,delta_acc_lat,cluster_id\n");
+    for (int i = 0; i < train_data->num_samples; i++) {
+        fprintf(ftrain, "%.6f,%.6f,%.6f,%.6f,%.6f,%d\n",
+            train_data->inputs[i][0],
+            train_data->inputs[i][1],
+            train_data->inputs[i][2],
+            train_data->inputs[i][3],
+            train_data->inputs[i][4],
+            train_data->outputs[i]);
+    }
+    fclose(ftrain);
+
+    // Escrever validation.csv
+
+    FILE* fval = fopen(val_file, "w");
+    if (!fval) {
+        printf("Erro ao criar %s\n", val_file);
+        return;
+    }
+    fprintf(fval, "speed,acc_norm,engine_speed,throttle_position,delta_acc_lat,cluster_id\n");
+    for (int i = 0; i < val_data->num_samples; i++) {
+        fprintf(fval, "%.6f,%.6f,%.6f,%.6f,%.6f,%d\n",
+            val_data->inputs[i][0],
+            val_data->inputs[i][1],
+            val_data->inputs[i][2],
+            val_data->inputs[i][3],
+            val_data->inputs[i][4],
+            val_data->outputs[i]);
+    }
+    fclose(fval);
+
+}
+
+/*void load_train_val_csv(const char* train_file, const char* val_file,Dataset* train_data, Dataset* val_data) {
+    FILE* ftrain = fopen(train_file, "r");
+    FILE* fval = fopen(val_file, "r");
+    char line[MAX_LINE_LENGTH];
+
+    // Carregar training.csv
+    train_data->num_samples = 0;
+    if (ftrain) {
+        fgets(line, sizeof(line), ftrain); // Pular cabeçalho
+        while (fgets(line, sizeof(line), ftrain)) {
+            double speed, acc_norm, engine_speed, throttle_position, delta_acc_lat;
+            int cluster_id;
+            if (sscanf(line, "%lf,%lf,%lf,%lf,%lf,%d",
+                       &speed, &acc_norm, &engine_speed, &throttle_position, &delta_acc_lat, &cluster_id) == 6) {
+                int idx = train_data->num_samples;
+                train_data->inputs[idx][0] = speed;
+                train_data->inputs[idx][1] = acc_norm;
+                train_data->inputs[idx][2] = engine_speed;
+                train_data->inputs[idx][3] = throttle_position;
+                train_data->inputs[idx][4] = delta_acc_lat;
+                train_data->outputs[idx] = cluster_id;
+                train_data->num_samples++;
+            }
+        }
+        fclose(ftrain);
+    }
+
+    // Carregar validation.csv
+    val_data->num_samples = 0;
+    if (fval) {
+        fgets(line, sizeof(line), fval); // Pular cabeçalho
+        while (fgets(line, sizeof(line), fval)) {
+            double speed, acc_norm, engine_speed, throttle_position, delta_acc_lat;
+            int cluster_id;
+            if (sscanf(line, "%lf,%lf,%lf,%lf,%lf,%d",
+                       &speed, &acc_norm, &engine_speed, &throttle_position, &delta_acc_lat, &cluster_id) == 6) {
+                int idx = val_data->num_samples;
+                val_data->inputs[idx][0] = speed;
+                val_data->inputs[idx][1] = acc_norm;
+                val_data->inputs[idx][2] = engine_speed;
+                val_data->inputs[idx][3] = throttle_position;
+                val_data->inputs[idx][4] = delta_acc_lat;
+                val_data->outputs[idx] = cluster_id;
+                val_data->num_samples++;
+            }
+        }
+        fclose(fval);
+    }
+}*/
