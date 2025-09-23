@@ -32,6 +32,11 @@
 #define PATH_DATA_CSV "arquivos_csv/data.csv"
 #define PATH_TRAINING_CSV "arquivos_csv/training.csv"
 #define PATH_VALIDATION_CSV "arquivos_csv/validation.csv"
+#define PATH_Q_CSV "arquivos_csv/q.csv"
+#define PATH_P_CSV "arquivos_csv/p.csv"
+#define PATH_S_CSV "arquivos_csv/s.csv"
+#define PATH_C_CSV "arquivos_csv/c.csv"
+#define PATH_TRAINING_RESULTS_CSV "arquivos_csv/training_results.csv"
 
 // Estrutura para armazenar os dados
 typedef struct {

@@ -230,7 +230,7 @@ void save_params(ANFISParams* params) {
     FILE* file;
     
     // Salvar centros (c)
-    file = fopen("c.csv", "w");
+    file = fopen(PATH_C_CSV, "w");
     if (file) {
         for (int i = 0; i < NUM_FEATURES; i++) {
             for (int j = 0; j < NUM_RULES; j++) {
@@ -243,7 +243,7 @@ void save_params(ANFISParams* params) {
     }
     
     // Salvar larguras (s)
-    file = fopen("s.csv", "w");
+    file = fopen(PATH_S_CSV, "w");
     if (file) {
         for (int i = 0; i < NUM_FEATURES; i++) {
             for (int j = 0; j < NUM_RULES; j++) {
@@ -256,7 +256,7 @@ void save_params(ANFISParams* params) {
     }
     
     // Salvar coeficientes (p)
-    file = fopen("p.csv", "w");
+    file = fopen(PATH_P_CSV, "w");
     if (file) {
         for (int i = 0; i < NUM_FEATURES; i++) {
             for (int j = 0; j < NUM_RULES; j++) {
@@ -269,7 +269,7 @@ void save_params(ANFISParams* params) {
     }
     
     // Salvar constantes (q)
-    file = fopen("q.csv", "w");
+    file = fopen(PATH_Q_CSV, "w");
     if (file) {
         for (int j = 0; j < NUM_RULES; j++) {
             fprintf(file, "%.6f", params->q[j]);
@@ -282,7 +282,7 @@ void save_params(ANFISParams* params) {
 
 // Função para salvar resultados
 void save_results(double* mse_history, double accuracy, double error_percent) {
-    FILE* file = fopen("training_results.csv", "w");
+    FILE* file = fopen(PATH_TRAINING_RESULTS_CSV, "w");
     if (file) {
         fprintf(file, "Epoch,MSE\n");
         for (int i = 0; i < MAX_EPOCHS; i++) {
@@ -300,13 +300,6 @@ void save_results(double* mse_history, double accuracy, double error_percent) {
 
 void randomize_matrix(double inputs[][NUM_FEATURES], int* outputs,int num_samples,Dataset* train_data, Dataset* val_data)
 {
-    //DataPoint data[MAX_SAMPLES];
-    //int total_samples = load_data(input_file, data);
-
-    //if (total_samples <= 0) {
-        //printf("Erro ao carregar dados de %s\n", input_file);
-        //return;
-    //}
 
     // Embaralhar os índices
     int indices[MAX_SAMPLES];
@@ -343,47 +336,6 @@ void randomize_matrix(double inputs[][NUM_FEATURES], int* outputs,int num_sample
         val_data->outputs[i] = outputs[idx];
     }
 
-    // Escrever training_csv.csv
-    /*FILE* ftrain = fopen(train_file, "w");
-    if (!ftrain) {
-        printf("Erro ao criar %s\n", train_file);
-        return;
-    }
-    // Cabeçalho igual ao arquivos.csv/data.csv
-    fprintf(ftrain, "speed,acc_norm,engine_speed,throttle_position,delta_acc_lat,cluster_id\n");
-    for (int i = 0; i < train_count; i++) {
-        int idx = indices[i];
-        fprintf(ftrain, "%.6f,%.6f,%.6f,%.6f,%.6f,%d\n",
-            data[idx].speed,
-            data[idx].acc_norm,
-            data[idx].engine_speed,
-            data[idx].throttle_position,
-            data[idx].delta_acc_lat,
-            data[idx].cluster_id);
-    }
-    fclose(ftrain);
-
-    // Escrever validation.csv
-    FILE* fval = fopen(val_file, "w");
-    if (!fval) {
-        printf("Erro ao criar %s\n", val_file);
-        return;
-    }
-    fprintf(fval, "speed,acc_norm,engine_speed,throttle_position,delta_acc_lat,cluster_id\n");
-    for (int i = train_count; i < total_samples; i++) {
-        int idx = indices[i];
-        fprintf(fval, "%.6f,%.6f,%.6f,%.6f,%.6f,%d\n",
-            data[idx].speed,
-            data[idx].acc_norm,
-            data[idx].engine_speed,
-            data[idx].throttle_position,
-            data[idx].delta_acc_lat,
-            data[idx].cluster_id);
-    }
-    fclose(fval);
-
-    printf("Dados embaralhados e divididos em %s (%d linhas) e %s (%d linhas)\n",
-        train_file, train_count, val_file, total_samples - train_count);*/
 }
 
 void write_csv_train_val(const char* train_file, const char* val_file,Dataset* train_data, Dataset* val_data)
@@ -427,53 +379,3 @@ void write_csv_train_val(const char* train_file, const char* val_file,Dataset* t
     fclose(fval);
 
 }
-
-/*void load_train_val_csv(const char* train_file, const char* val_file,Dataset* train_data, Dataset* val_data) {
-    FILE* ftrain = fopen(train_file, "r");
-    FILE* fval = fopen(val_file, "r");
-    char line[MAX_LINE_LENGTH];
-
-    // Carregar training.csv
-    train_data->num_samples = 0;
-    if (ftrain) {
-        fgets(line, sizeof(line), ftrain); // Pular cabeçalho
-        while (fgets(line, sizeof(line), ftrain)) {
-            double speed, acc_norm, engine_speed, throttle_position, delta_acc_lat;
-            int cluster_id;
-            if (sscanf(line, "%lf,%lf,%lf,%lf,%lf,%d",
-                       &speed, &acc_norm, &engine_speed, &throttle_position, &delta_acc_lat, &cluster_id) == 6) {
-                int idx = train_data->num_samples;
-                train_data->inputs[idx][0] = speed;
-                train_data->inputs[idx][1] = acc_norm;
-                train_data->inputs[idx][2] = engine_speed;
-                train_data->inputs[idx][3] = throttle_position;
-                train_data->inputs[idx][4] = delta_acc_lat;
-                train_data->outputs[idx] = cluster_id;
-                train_data->num_samples++;
-            }
-        }
-        fclose(ftrain);
-    }
-
-    // Carregar validation.csv
-    val_data->num_samples = 0;
-    if (fval) {
-        fgets(line, sizeof(line), fval); // Pular cabeçalho
-        while (fgets(line, sizeof(line), fval)) {
-            double speed, acc_norm, engine_speed, throttle_position, delta_acc_lat;
-            int cluster_id;
-            if (sscanf(line, "%lf,%lf,%lf,%lf,%lf,%d",
-                       &speed, &acc_norm, &engine_speed, &throttle_position, &delta_acc_lat, &cluster_id) == 6) {
-                int idx = val_data->num_samples;
-                val_data->inputs[idx][0] = speed;
-                val_data->inputs[idx][1] = acc_norm;
-                val_data->inputs[idx][2] = engine_speed;
-                val_data->inputs[idx][3] = throttle_position;
-                val_data->inputs[idx][4] = delta_acc_lat;
-                val_data->outputs[idx] = cluster_id;
-                val_data->num_samples++;
-            }
-        }
-        fclose(fval);
-    }
-}*/
