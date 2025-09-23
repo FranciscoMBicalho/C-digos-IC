@@ -1,69 +1,82 @@
 #include "anfis.h"
 
 // Função para gerar número aleatório entre min e max
-double random_double(double min, double max) {
+double random_double(double min, double max)
+{
     return min + (max - min) * ((double)rand() / RAND_MAX);
 }
 
 // Função para carregar dados do CSV
-int load_data(const char* filename, DataPoint* data) {
-    FILE* file = fopen(filename, "r");
-    if (!file) {
+int load_data(const char *filename, DataPoint *data)
+{
+    FILE *file = fopen(filename, "r");
+    if (!file)
+    {
         printf("Erro ao abrir arquivo: %s\n", filename);
         return -1;
     }
-    
+
     char line[MAX_LINE_LENGTH];
     int count = 0;
-    
+
     // Pular cabeçalho
-    if (fgets(line, sizeof(line), file)) {
+    if (fgets(line, sizeof(line), file))
+    {
         // Cabeçalho lido
     }
-    
+
     // Ler dados
-    while (fgets(line, sizeof(line), file) && count < MAX_SAMPLES) {
-        char* token = strtok(line, ",");
-        if (!token) continue;
-        
+    while (fgets(line, sizeof(line), file) && count < MAX_SAMPLES)
+    {
+        char *token = strtok(line, ",");
+        if (!token)
+            continue;
+
         // Assumindo ordem: speed, acc_norm, engine_speed, throttle_position, delta_acc_lat, cluster_id
         data[count].speed = atof(token);
-        
+
         token = strtok(NULL, ",");
-        if (!token) continue;
+        if (!token)
+            continue;
         data[count].acc_norm = atof(token);
-        
+
         token = strtok(NULL, ",");
-        if (!token) continue;
+        if (!token)
+            continue;
         data[count].engine_speed = atof(token);
-        
+
         token = strtok(NULL, ",");
-        if (!token) continue;
+        if (!token)
+            continue;
         data[count].throttle_position = atof(token);
-        
+
         token = strtok(NULL, ",");
-        if (!token) continue;
+        if (!token)
+            continue;
         data[count].delta_acc_lat = atof(token);
-        
+
         token = strtok(NULL, ",");
-        if (!token) continue;
+        if (!token)
+            continue;
         data[count].cluster_id = atoi(token);
-        
+
         count++;
     }
-    
+
     fclose(file);
     return count;
 }
 
 // Função para normalizar os dados
-void normalize_data(DataPoint* data, int num_samples, double normalized_inputs[][NUM_FEATURES]) {
-    double max_inputs[NUM_FEATURES] = {MAX_SPEED, MAX_ACC_NORM, MAX_ENGINE_SPEED, 
+void normalize_data(DataPoint *data, int num_samples, double normalized_inputs[][NUM_FEATURES])
+{
+    double max_inputs[NUM_FEATURES] = {MAX_SPEED, MAX_ACC_NORM, MAX_ENGINE_SPEED,
                                        MAX_THROTTLE_POSITION, MAX_DELTA_ACC_LAT};
-    double min_inputs[NUM_FEATURES] = {MIN_SPEED, MIN_ACC_NORM, MIN_ENGINE_SPEED, 
+    double min_inputs[NUM_FEATURES] = {MIN_SPEED, MIN_ACC_NORM, MIN_ENGINE_SPEED,
                                        MIN_THROTTLE_POSITION, MIN_DELTA_ACC_LAT};
-    
-    for (int i = 0; i < num_samples; i++) {
+
+    for (int i = 0; i < num_samples; i++)
+    {
         normalized_inputs[i][0] = (data[i].speed - min_inputs[0]) / (max_inputs[0] - min_inputs[0]);
         normalized_inputs[i][1] = (data[i].acc_norm - min_inputs[1]) / (max_inputs[1] - min_inputs[1]);
         normalized_inputs[i][2] = (data[i].engine_speed - min_inputs[2]) / (max_inputs[2] - min_inputs[2]);
@@ -72,50 +85,57 @@ void normalize_data(DataPoint* data, int num_samples, double normalized_inputs[]
     }
 }
 
-// Função para dividir dados em treino e validação
-void split_data(double inputs[][NUM_FEATURES], int* outputs, int num_samples, 
-                Dataset* train_data, Dataset* val_data, double train_ratio) {
-    int train_size = (int)(num_samples * train_ratio);
-    
-    // Copiar dados de treino
-    train_data->num_samples = train_size;
-    for (int i = 0; i < train_size; i++) {
-        for (int j = 0; j < NUM_FEATURES; j++) {
-            train_data->inputs[i][j] = inputs[i][j];
-        }
-        train_data->outputs[i] = outputs[i];
-    }
-    
-    // Copiar dados de validação
-    val_data->num_samples = num_samples - train_size;
-    for (int i = train_size; i < num_samples; i++) {
-        for (int j = 0; j < NUM_FEATURES; j++) {
-            val_data->inputs[i - train_size][j] = inputs[i][j];
-        }
-        val_data->outputs[i - train_size] = outputs[i];
-    }
-}
+// // Função para dividir dados em treino e validação
+// void split_data(double inputs[][NUM_FEATURES], int* outputs, int num_samples,
+//                 Dataset* train_data, Dataset* val_data, double train_ratio) {
+//     int train_size = (int)(num_samples * train_ratio);
+
+//     // Copiar dados de treino
+//     train_data->num_samples = train_size;
+//     for (int i = 0; i < train_size; i++) {
+//         for (int j = 0; j < NUM_FEATURES; j++) {
+//             train_data->inputs[i][j] = inputs[i][j];
+//         }
+//         train_data->outputs[i] = outputs[i];
+//     }
+
+//     // Copiar dados de validação
+//     val_data->num_samples = num_samples - train_size;
+//     for (int i = train_size; i < num_samples; i++) {
+//         for (int j = 0; j < NUM_FEATURES; j++) {
+//             val_data->inputs[i - train_size][j] = inputs[i][j];
+//         }
+//         val_data->outputs[i - train_size] = outputs[i];
+//     }
+// }
 
 // Função para inicializar parâmetros do ANFIS
-void initialize_params(ANFISParams* params, double inputs[][NUM_FEATURES], int num_samples) {
+void initialize_params(ANFISParams *params, double inputs[][NUM_FEATURES], int num_samples)
+{
     // Encontrar min e max dos dados de treino
     double xmin[NUM_FEATURES], xmax[NUM_FEATURES];
-    
-    for (int i = 0; i < NUM_FEATURES; i++) {
+
+    for (int i = 0; i < NUM_FEATURES; i++)
+    {
         xmin[i] = inputs[0][i];
         xmax[i] = inputs[0][i];
-        
-        for (int k = 1; k < num_samples; k++) {
-            if (inputs[k][i] < xmin[i]) xmin[i] = inputs[k][i];
-            if (inputs[k][i] > xmax[i]) xmax[i] = inputs[k][i];
+
+        for (int k = 1; k < num_samples; k++)
+        {
+            if (inputs[k][i] < xmin[i])
+                xmin[i] = inputs[k][i];
+            if (inputs[k][i] > xmax[i])
+                xmax[i] = inputs[k][i];
         }
     }
-    
+
     // Inicializar parâmetros aleatoriamente
     srand(42); // Semente para reprodutibilidade
-    
-    for (int j = 0; j < NUM_RULES; j++) {
-        for (int i = 0; i < NUM_FEATURES; i++) {
+
+    for (int j = 0; j < NUM_RULES; j++)
+    {
+        for (int i = 0; i < NUM_FEATURES; i++)
+        {
             params->c[i][j] = random_double(xmin[i], xmax[i]);
             params->s[i][j] = random_double(0.1, 1.0);
             params->p[i][j] = random_double(-1.0, 1.0);
@@ -125,58 +145,66 @@ void initialize_params(ANFISParams* params, double inputs[][NUM_FEATURES], int n
 }
 
 // Função principal do ANFIS (equivalente à função calys do MATLAB)
-double calys(double* x, ANFISParams* params, double* w, double* y, double* b_out) {
+double calys(double *x, ANFISParams *params, double *w, double *y, double *b_out)
+{
     double a = 0.0, b = 0.0;
-    
+
     // Calcular saída e peso para cada regra
-    for (int j = 0; j < NUM_RULES; j++) {
+    for (int j = 0; j < NUM_RULES; j++)
+    {
         y[j] = params->q[j];
         w[j] = 1.0;
-        
-        for (int i = 0; i < NUM_FEATURES; i++) {
+
+        for (int i = 0; i < NUM_FEATURES; i++)
+        {
             y[j] += params->p[i][j] * x[i];
             double diff = x[i] - params->c[i][j];
             w[j] *= exp(-0.5 * (diff * diff) / (params->s[i][j] * params->s[i][j]));
         }
-        
+
         a += w[j] * y[j];
         b += w[j];
     }
-    
+
     *b_out = b;
-    return (b > 1e-10) ? a / b : 0.0;  // Evitar divisão por zero
+    return (b > 1e-10) ? a / b : 0.0; // Evitar divisão por zero
 }
 
 // Função de treinamento do ANFIS
-void train_anfis(Dataset* train_data, ANFISParams* params, double* mse_history) {
+void train_anfis(Dataset *train_data, ANFISParams *params, double *mse_history)
+{
     double w[NUM_RULES], y[NUM_RULES];
-    
-    for (int epoch = 0; epoch < MAX_EPOCHS; epoch++) {
+
+    for (int epoch = 0; epoch < MAX_EPOCHS; epoch++)
+    {
         double total_error = 0.0;
-        
-        for (int k = 0; k < train_data->num_samples; k++) {
-            double* x = train_data->inputs[k];
+
+        for (int k = 0; k < train_data->num_samples; k++)
+        {
+            double *x = train_data->inputs[k];
             int target = train_data->outputs[k];
             double b;
-            
+
             double ys = calys(x, params, w, y, &b);
             double error = ys - target;
             total_error += error * error;
-            
+
             // Backpropagation - atualizar parâmetros
-            for (int j = 0; j < NUM_RULES; j++) {
+            for (int j = 0; j < NUM_RULES; j++)
+            {
                 double dys_dw = (y[j] - ys) / (b + 1e-10);
                 double dys_dy = w[j] / (b + 1e-10);
-                
-                for (int i = 0; i < NUM_FEATURES; i++) {
+
+                for (int i = 0; i < NUM_FEATURES; i++)
+                {
                     double diff = x[i] - params->c[i][j];
                     double s_sq = params->s[i][j] * params->s[i][j];
                     double s_cu = s_sq * params->s[i][j];
-                    
+
                     double dw_dc = w[j] * diff / s_sq;
                     double dw_ds = w[j] * diff * diff / s_cu;
                     double dy_dp = x[i];
-                    
+
                     // Atualizar parâmetros
                     params->c[i][j] -= ALPHA * error * dys_dw * dw_dc;
                     params->s[i][j] -= ALPHA * error * dys_dw * dw_ds;
@@ -185,95 +213,117 @@ void train_anfis(Dataset* train_data, ANFISParams* params, double* mse_history) 
                 params->q[j] -= ALPHA * error * dys_dy;
             }
         }
-        
+
         mse_history[epoch] = total_error / train_data->num_samples;
-        
+
         // Mostrar progresso a cada 10 épocas
-        if ((epoch + 1) % 10 == 0) {
+        if ((epoch + 1) % 10 == 0)
+        {
             printf("Época %d: MSE = %.6f\n", epoch + 1, mse_history[epoch]);
         }
     }
 }
 
 // Função para avaliar o modelo
-void evaluate_anfis(Dataset* val_data, ANFISParams* params, double* accuracy, double* error_percent) {
+void evaluate_anfis(Dataset *val_data, ANFISParams *params, double *accuracy, double *error_percent)
+{
     double w[NUM_RULES], y[NUM_RULES];
     int correct_predictions = 0;
     double total_error_percent = 0.0;
-    
-    for (int k = 0; k < val_data->num_samples; k++) {
-        double* x = val_data->inputs[k];
+
+    for (int k = 0; k < val_data->num_samples; k++)
+    {
+        double *x = val_data->inputs[k];
         int target = val_data->outputs[k];
         double b;
-        
+
         double y_pred = calys(x, params, w, y, &b);
-        
+
         // Classificação (arredondamento e limitação)
         int y_pred_class = (int)round(y_pred);
-        if (y_pred_class > 3) y_pred_class = 3;
-        if (y_pred_class < 1) y_pred_class = 1;
-        
-        if (y_pred_class == target) {
+        if (y_pred_class > 3)
+            y_pred_class = 3;
+        if (y_pred_class < 1)
+            y_pred_class = 1;
+
+        if (y_pred_class == target)
+        {
             correct_predictions++;
         }
-        
+
         // Erro percentual
         total_error_percent += fabs((target - y_pred) / (target + 1e-10));
     }
-    
+
     *accuracy = ((double)correct_predictions / val_data->num_samples) * 100.0;
     *error_percent = (total_error_percent / val_data->num_samples) * 100.0;
 }
 
 // Função para salvar parâmetros em arquivos CSV
-void save_params(ANFISParams* params) {
-    FILE* file;
-    
+void save_params(ANFISParams *params)
+{
+    FILE *file;
+
     // Salvar centros (c)
     file = fopen(PATH_C_CSV, "w");
-    if (file) {
-        for (int i = 0; i < NUM_FEATURES; i++) {
-            for (int j = 0; j < NUM_RULES; j++) {
+    if (file)
+    {
+        for (int i = 0; i < NUM_FEATURES; i++)
+        {
+            for (int j = 0; j < NUM_RULES; j++)
+            {
                 fprintf(file, "%.6f", params->c[i][j]);
-                if (j < NUM_RULES - 1) fprintf(file, ",");
+                if (j < NUM_RULES - 1)
+                    fprintf(file, ",");
             }
             fprintf(file, "\n");
         }
         fclose(file);
     }
-    
+
     // Salvar larguras (s)
     file = fopen(PATH_S_CSV, "w");
-    if (file) {
-        for (int i = 0; i < NUM_FEATURES; i++) {
-            for (int j = 0; j < NUM_RULES; j++) {
+    if (file)
+    {
+        for (int i = 0; i < NUM_FEATURES; i++)
+        {
+            for (int j = 0; j < NUM_RULES; j++)
+            {
                 fprintf(file, "%.6f", params->s[i][j]);
-                if (j < NUM_RULES - 1) fprintf(file, ",");
+                if (j < NUM_RULES - 1)
+                    fprintf(file, ",");
             }
             fprintf(file, "\n");
         }
         fclose(file);
     }
-    
+
     // Salvar coeficientes (p)
     file = fopen(PATH_P_CSV, "w");
-    if (file) {
-        for (int i = 0; i < NUM_FEATURES; i++) {
-            for (int j = 0; j < NUM_RULES; j++) {
+    if (file)
+    {
+        for (int i = 0; i < NUM_FEATURES; i++)
+        {
+            for (int j = 0; j < NUM_RULES; j++)
+            {
                 fprintf(file, "%.6f", params->p[i][j]);
-                if (j < NUM_RULES - 1) fprintf(file, ",");
+                if (j < NUM_RULES - 1)
+                    fprintf(file, ",");
             }
             fprintf(file, "\n");
         }
         fclose(file);
     }
-    
+
     // Salvar constantes (q)
     file = fopen(PATH_Q_CSV, "w");
-    if (file) {
-        for (int j = 0; j < NUM_RULES; j++) {
+    if (file)
+    {
+        for (int j = 0; j < NUM_RULES; j++)
+        {
             fprintf(file, "%.6f", params->q[j]);
-            if (j < NUM_RULES - 1) fprintf(file, ",");
+            if (j < NUM_RULES - 1)
+                fprintf(file, ",");
         }
         fprintf(file, "\n");
         fclose(file);
@@ -281,16 +331,19 @@ void save_params(ANFISParams* params) {
 }
 
 // Função para salvar resultados
-void save_results(double* mse_history, double accuracy, double error_percent) {
-    FILE* file = fopen(PATH_TRAINING_RESULTS_CSV, "w");
-    if (file) {
+void save_results(double *mse_history, double accuracy, double error_percent)
+{
+    FILE *file = fopen(PATH_TRAINING_RESULTS_CSV, "w");
+    if (file)
+    {
         fprintf(file, "Epoch,MSE\n");
-        for (int i = 0; i < MAX_EPOCHS; i++) {
+        for (int i = 0; i < MAX_EPOCHS; i++)
+        {
             fprintf(file, "%d,%.6f\n", i + 1, mse_history[i]);
         }
         fclose(file);
     }
-    
+
     printf("\n=== RESULTADOS ===\n");
     printf("Acurácia no conjunto de validação: %.2f%%\n", accuracy);
     printf("Erro Percentual Médio: %.2f%%\n", error_percent);
@@ -298,14 +351,16 @@ void save_results(double* mse_history, double accuracy, double error_percent) {
     printf("Histórico de treinamento salvo em: training_results.csv\n");
 }
 
-void randomize_matrix(double inputs[][NUM_FEATURES], int* outputs,int num_samples,Dataset* train_data, Dataset* val_data)
+void randomize_matrix(double inputs[][NUM_FEATURES], int *outputs, int num_samples, Dataset *train_data, Dataset *val_data)
 {
 
     // Embaralhar os índices
     int indices[MAX_SAMPLES];
-    for (int i = 0; i < num_samples; i++) indices[i] = i;
-    //srand((unsigned int)time(NULL));
-    for (int i = num_samples - 1; i > 0; i--) {
+    for (int i = 0; i < num_samples; i++)
+        indices[i] = i;
+    // srand((unsigned int)time(NULL));
+    for (int i = num_samples - 1; i > 0; i--)
+    {
         int j = rand() % (i + 1);
         int tmp = indices[i];
         indices[i] = indices[j];
@@ -318,9 +373,11 @@ void randomize_matrix(double inputs[][NUM_FEATURES], int* outputs,int num_sample
 
     // Escrever em train_data
 
-    for (int i = 0; i < train_data->num_samples; i++) {
+    for (int i = 0; i < train_data->num_samples; i++)
+    {
         int idx = indices[i];
-        for (int j = 0; j < NUM_FEATURES; j++) {
+        for (int j = 0; j < NUM_FEATURES; j++)
+        {
             train_data->inputs[i][j] = inputs[idx][j];
         }
         train_data->outputs[i] = outputs[idx];
@@ -328,54 +385,58 @@ void randomize_matrix(double inputs[][NUM_FEATURES], int* outputs,int num_sample
 
     // Escrever em val_data
 
-    for (int i = 0; i < val_data->num_samples; i++) {
+    for (int i = 0; i < val_data->num_samples; i++)
+    {
         int idx = indices[i];
-        for (int j = 0; j < NUM_FEATURES; j++) {
+        for (int j = 0; j < NUM_FEATURES; j++)
+        {
             val_data->inputs[i][j] = inputs[idx][j];
         }
         val_data->outputs[i] = outputs[idx];
     }
-
 }
 
-void write_csv_train_val(const char* train_file, const char* val_file,Dataset* train_data, Dataset* val_data)
+void write_csv_train_val(const char *train_file, const char *val_file, Dataset *train_data, Dataset *val_data)
 {
     // Escrever training.csv
-    FILE* ftrain = fopen(train_file, "w");
-    if (!ftrain) {
+    FILE *ftrain = fopen(train_file, "w");
+    if (!ftrain)
+    {
         printf("Erro ao criar %s\n", train_file);
         return;
     }
     // Cabeçalho igual ao arquivos.csv/data.csv
     fprintf(ftrain, "speed,acc_norm,engine_speed,throttle_position,delta_acc_lat,cluster_id\n");
-    for (int i = 0; i < train_data->num_samples; i++) {
+    for (int i = 0; i < train_data->num_samples; i++)
+    {
         fprintf(ftrain, "%.6f,%.6f,%.6f,%.6f,%.6f,%d\n",
-            train_data->inputs[i][0],
-            train_data->inputs[i][1],
-            train_data->inputs[i][2],
-            train_data->inputs[i][3],
-            train_data->inputs[i][4],
-            train_data->outputs[i]);
+                train_data->inputs[i][0],
+                train_data->inputs[i][1],
+                train_data->inputs[i][2],
+                train_data->inputs[i][3],
+                train_data->inputs[i][4],
+                train_data->outputs[i]);
     }
     fclose(ftrain);
 
     // Escrever validation.csv
 
-    FILE* fval = fopen(val_file, "w");
-    if (!fval) {
+    FILE *fval = fopen(val_file, "w");
+    if (!fval)
+    {
         printf("Erro ao criar %s\n", val_file);
         return;
     }
     fprintf(fval, "speed,acc_norm,engine_speed,throttle_position,delta_acc_lat,cluster_id\n");
-    for (int i = 0; i < val_data->num_samples; i++) {
+    for (int i = 0; i < val_data->num_samples; i++)
+    {
         fprintf(fval, "%.6f,%.6f,%.6f,%.6f,%.6f,%d\n",
-            val_data->inputs[i][0],
-            val_data->inputs[i][1],
-            val_data->inputs[i][2],
-            val_data->inputs[i][3],
-            val_data->inputs[i][4],
-            val_data->outputs[i]);
+                val_data->inputs[i][0],
+                val_data->inputs[i][1],
+                val_data->inputs[i][2],
+                val_data->inputs[i][3],
+                val_data->inputs[i][4],
+                val_data->outputs[i]);
     }
     fclose(fval);
-
 }
