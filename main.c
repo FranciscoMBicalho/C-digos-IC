@@ -45,7 +45,7 @@ int main() {
     }
     
     // Dividir dados em treino e validação (70% treino, 30% validação)
-    Dataset train_data, val_data;
+    Dataset train_data = {0}, val_data = {0};
     printf("Dividindo dados em treino e validação...\n");
     randomize_matrix(normalized_inputs,outputs,num_samples,&train_data, &val_data);
     write_csv_train_val(PATH_TRAINING_CSV,PATH_VALIDATION_CSV,&train_data, &val_data);
@@ -55,7 +55,7 @@ int main() {
     printf("Dados de validação: %d amostras\n", val_data.num_samples);
     
     // Inicializar parâmetros do ANFIS
-    ANFISParams params;
+    ANFISParams params = {0};
     printf("Inicializando parâmetros do ANFIS...\n");
     initialize_params(&params, train_data.inputs, train_data.num_samples);
     
