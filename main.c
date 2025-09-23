@@ -21,14 +21,15 @@ int main()
     int num_samples = load_data("arquivos_csv/data.csv", raw_data);
     if (num_samples <= 0)
     {
-        printf("Erro ao carregar dados ou arquivo vazio\n");
+        s
+            printf("Erro ao carregar dados ou arquivo vazio\n");
         free(raw_data);
         return -1;
     }
     printf("Dados carregados: %d amostras\n", num_samples);
 
     // Alocar memória para dados normalizados
-    double (*normalized_inputs)[NUM_FEATURES] = malloc(num_samples * sizeof(*normalized_inputs));
+    float (*normalized_inputs)[NUM_FEATURES] = malloc(num_samples * sizeof(*normalized_inputs));
     int *outputs = malloc(num_samples * sizeof(int));
     if (!normalized_inputs || !outputs)
     {
@@ -64,7 +65,7 @@ int main()
     initialize_params(&params, train_data.inputs, train_data.num_samples);
 
     // Alocar memória para histórico de MSE
-    double *mse_history = malloc(MAX_EPOCHS * sizeof(double));
+    float *mse_history = malloc(MAX_EPOCHS * sizeof(float));
     if (!mse_history)
     {
         printf("Erro ao alocar memória para histórico MSE\n");
@@ -84,13 +85,13 @@ int main()
     train_anfis(&train_data, &params, mse_history);
     clock_t end_time = clock();
 
-    double training_time = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
+    float training_time = ((float)(end_time - start_time)) / CLOCKS_PER_SEC;
     printf("----------------------------------------\n");
     printf("Treinamento concluído em %.2f segundos\n\n", training_time);
 
     // Avaliar o modelo
     printf("Avaliando modelo no conjunto de validação...\n");
-    double accuracy, error_percent;
+    float accuracy, error_percent;
     evaluate_anfis(&val_data, &params, &accuracy, &error_percent);
 
     // Salvar parâmetros e resultados

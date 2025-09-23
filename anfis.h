@@ -9,11 +9,11 @@
 
 // Constantes do modelo
 #define NUM_RULES 5
-#define MAX_EPOCHS 100
-#define ALPHA 0.007
+#define MAX_EPOCHS 200
+#define ALPHA 0.006
 #define NUM_FEATURES 5
 #define MAX_LINE_LENGTH 1024
-#define MAX_SAMPLES 10000
+#define MAX_SAMPLES 1816
 
 // Limites para normalização
 #define MAX_SPEED 120.0
@@ -41,44 +41,44 @@
 // Estrutura para armazenar os dados
 typedef struct
 {
-    double speed;
-    double acc_norm;
-    double engine_speed;
-    double throttle_position;
-    double delta_acc_lat;
+    float speed;
+    float acc_norm;
+    float engine_speed;
+    float throttle_position;
+    float delta_acc_lat;
     int cluster_id;
 } DataPoint;
 
 // Estrutura para os parâmetros do ANFIS
 typedef struct
 {
-    double c[NUM_FEATURES][NUM_RULES]; // Centros das funções de pertinência
-    double s[NUM_FEATURES][NUM_RULES]; // Larguras das funções de pertinência
-    double p[NUM_FEATURES][NUM_RULES]; // Coeficientes lineares das consequências
-    double q[NUM_RULES];               // Termos constantes das consequências
+    float c[NUM_FEATURES][NUM_RULES]; // Centros das funções de pertinência
+    float s[NUM_FEATURES][NUM_RULES]; // Larguras das funções de pertinência
+    float p[NUM_FEATURES][NUM_RULES]; // Coeficientes lineares das consequências
+    float q[NUM_RULES];               // Termos constantes das consequências
 } ANFISParams;
 
 // Estrutura para os dados normalizados
 typedef struct
 {
-    double inputs[MAX_SAMPLES][NUM_FEATURES];
+    float inputs[MAX_SAMPLES][NUM_FEATURES];
     int outputs[MAX_SAMPLES];
     int num_samples;
 } Dataset;
 
 // Protótipos das funções
 int load_data(const char *filename, DataPoint *data);
-void normalize_data(DataPoint *data, int num_samples, double normalized_inputs[][NUM_FEATURES]);
-void randomize_matrix(double inputs[][NUM_FEATURES], int *outputs, int num_samples, Dataset *train_data, Dataset *val_data);
+void normalize_data(DataPoint *data, int num_samples, float normalized_inputs[][NUM_FEATURES]);
+void randomize_matrix(float inputs[][NUM_FEATURES], int *outputs, int num_samples, Dataset *train_data, Dataset *val_data);
 void write_csv_train_val(const char *train_file, const char *val_file, Dataset *train_data, Dataset *val_data);
-void split_data(double inputs[][NUM_FEATURES], int *outputs, int num_samples,
-                Dataset *train_data, Dataset *val_data, double train_ratio);
-void initialize_params(ANFISParams *params, double inputs[][NUM_FEATURES], int num_samples);
-double random_double(double min, double max);
-double calys(double *x, ANFISParams *params, double *w, double *y, double *b_out);
-void train_anfis(Dataset *train_data, ANFISParams *params, double *mse_history);
-void evaluate_anfis(Dataset *val_data, ANFISParams *params, double *accuracy, double *error_percent);
+void split_data(float inputs[][NUM_FEATURES], int *outputs, int num_samples,
+                Dataset *train_data, Dataset *val_data, float train_ratio);
+void initialize_params(ANFISParams *params, float inputs[][NUM_FEATURES], int num_samples);
+float random_double(float min, float max);
+float calys(float *x, ANFISParams *params, float *w, float *y, float *b_out);
+void train_anfis(Dataset *train_data, ANFISParams *params, float *mse_history);
+void evaluate_anfis(Dataset *val_data, ANFISParams *params, float *accuracy, float *error_percent);
 void save_params(ANFISParams *params);
-void save_results(double *mse_history, double accuracy, double error_percent);
+void save_results(float *mse_history, float accuracy, float error_percent);
 
 #endif // ANFIS_H

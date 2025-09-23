@@ -1,9 +1,9 @@
 #include "anfis.h"
 
 // Função para gerar número aleatório entre min e max
-double random_double(double min, double max)
+float random_float(float min, float max)
 {
-    return min + (max - min) * ((double)rand() / RAND_MAX);
+    return min + (max - min) * ((float)rand() / RAND_MAX);
 }
 
 // Função para carregar dados do CSV
@@ -68,12 +68,12 @@ int load_data(const char *filename, DataPoint *data)
 }
 
 // Função para normalizar os dados
-void normalize_data(DataPoint *data, int num_samples, double normalized_inputs[][NUM_FEATURES])
+void normalize_data(DataPoint *data, int num_samples, float normalized_inputs[][NUM_FEATURES])
 {
-    double max_inputs[NUM_FEATURES] = {MAX_SPEED, MAX_ACC_NORM, MAX_ENGINE_SPEED,
-                                       MAX_THROTTLE_POSITION, MAX_DELTA_ACC_LAT};
-    double min_inputs[NUM_FEATURES] = {MIN_SPEED, MIN_ACC_NORM, MIN_ENGINE_SPEED,
-                                       MIN_THROTTLE_POSITION, MIN_DELTA_ACC_LAT};
+    float max_inputs[NUM_FEATURES] = {MAX_SPEED, MAX_ACC_NORM, MAX_ENGINE_SPEED,
+                                      MAX_THROTTLE_POSITION, MAX_DELTA_ACC_LAT};
+    float min_inputs[NUM_FEATURES] = {MIN_SPEED, MIN_ACC_NORM, MIN_ENGINE_SPEED,
+                                      MIN_THROTTLE_POSITION, MIN_DELTA_ACC_LAT};
 
     for (int i = 0; i < num_samples; i++)
     {
@@ -86,8 +86,8 @@ void normalize_data(DataPoint *data, int num_samples, double normalized_inputs[]
 }
 
 // // Função para dividir dados em treino e validação
-// void split_data(double inputs[][NUM_FEATURES], int* outputs, int num_samples,
-//                 Dataset* train_data, Dataset* val_data, double train_ratio) {
+// void split_data(float inputs[][NUM_FEATURES], int* outputs, int num_samples,
+//                 Dataset* train_data, Dataset* val_data, float train_ratio) {
 //     int train_size = (int)(num_samples * train_ratio);
 
 //     // Copiar dados de treino
@@ -110,10 +110,10 @@ void normalize_data(DataPoint *data, int num_samples, double normalized_inputs[]
 // }
 
 // Função para inicializar parâmetros do ANFIS
-void initialize_params(ANFISParams *params, double inputs[][NUM_FEATURES], int num_samples)
+void initialize_params(ANFISParams *params, float inputs[][NUM_FEATURES], int num_samples)
 {
     // Encontrar min e max dos dados de treino
-    double xmin[NUM_FEATURES], xmax[NUM_FEATURES];
+    float xmin[NUM_FEATURES], xmax[NUM_FEATURES];
 
     for (int i = 0; i < NUM_FEATURES; i++)
     {
@@ -130,24 +130,24 @@ void initialize_params(ANFISParams *params, double inputs[][NUM_FEATURES], int n
     }
 
     // Inicializar parâmetros aleatoriamente
-    srand(42); // Semente para reprodutibilidade
+    srand(time(NULL)); // Semente para reprodutibilidade
 
     for (int j = 0; j < NUM_RULES; j++)
     {
         for (int i = 0; i < NUM_FEATURES; i++)
         {
-            params->c[i][j] = random_double(xmin[i], xmax[i]);
-            params->s[i][j] = random_double(0.1, 1.0);
-            params->p[i][j] = random_double(-1.0, 1.0);
+            params->c[i][j] = random_float(xmin[i], xmax[i]);
+            params->s[i][j] = random_float(0.1, 1.0);
+            params->p[i][j] = random_float(-1.0, 1.0);
         }
-        params->q[j] = random_double(-1.0, 1.0);
+        params->q[j] = random_float(-1.0, 1.0);
     }
 }
 
 // Função principal do ANFIS (equivalente à função calys do MATLAB)
-double calys(double *x, ANFISParams *params, double *w, double *y, double *b_out)
+float calys(float *x, ANFISParams *params, float *w, float *y, float *b_out)
 {
-    double a = 0.0, b = 0.0;
+    float a = 0.0, b = 0.0;
 
     // Calcular saída e peso para cada regra
     for (int j = 0; j < NUM_RULES; j++)
@@ -158,7 +158,7 @@ double calys(double *x, ANFISParams *params, double *w, double *y, double *b_out
         for (int i = 0; i < NUM_FEATURES; i++)
         {
             y[j] += params->p[i][j] * x[i];
-            double diff = x[i] - params->c[i][j];
+            float diff = x[i] - params->c[i][j];
             w[j] *= exp(-0.5 * (diff * diff) / (params->s[i][j] * params->s[i][j]));
         }
 
@@ -171,39 +171,39 @@ double calys(double *x, ANFISParams *params, double *w, double *y, double *b_out
 }
 
 // Função de treinamento do ANFIS
-void train_anfis(Dataset *train_data, ANFISParams *params, double *mse_history)
+void train_anfis(Dataset *train_data, ANFISParams *params, float *mse_history)
 {
-    double w[NUM_RULES], y[NUM_RULES];
+    float w[NUM_RULES], y[NUM_RULES];
 
     for (int epoch = 0; epoch < MAX_EPOCHS; epoch++)
     {
-        double total_error = 0.0;
+        float total_error = 0.0;
 
         for (int k = 0; k < train_data->num_samples; k++)
         {
-            double *x = train_data->inputs[k];
+            float *x = train_data->inputs[k];
             int target = train_data->outputs[k];
-            double b;
+            float b;
 
-            double ys = calys(x, params, w, y, &b);
-            double error = ys - target;
+            float ys = calys(x, params, w, y, &b);
+            float error = ys - target;
             total_error += error * error;
 
             // Backpropagation - atualizar parâmetros
             for (int j = 0; j < NUM_RULES; j++)
             {
-                double dys_dw = (y[j] - ys) / (b + 1e-10);
-                double dys_dy = w[j] / (b + 1e-10);
+                float dys_dw = (y[j] - ys) / (b + 1e-10);
+                float dys_dy = w[j] / (b + 1e-10);
 
                 for (int i = 0; i < NUM_FEATURES; i++)
                 {
-                    double diff = x[i] - params->c[i][j];
-                    double s_sq = params->s[i][j] * params->s[i][j];
-                    double s_cu = s_sq * params->s[i][j];
+                    float diff = x[i] - params->c[i][j];
+                    float s_sq = params->s[i][j] * params->s[i][j];
+                    float s_cu = s_sq * params->s[i][j];
 
-                    double dw_dc = w[j] * diff / s_sq;
-                    double dw_ds = w[j] * diff * diff / s_cu;
-                    double dy_dp = x[i];
+                    float dw_dc = w[j] * diff / s_sq;
+                    float dw_ds = w[j] * diff * diff / s_cu;
+                    float dy_dp = x[i];
 
                     // Atualizar parâmetros
                     params->c[i][j] -= ALPHA * error * dys_dw * dw_dc;
@@ -225,19 +225,19 @@ void train_anfis(Dataset *train_data, ANFISParams *params, double *mse_history)
 }
 
 // Função para avaliar o modelo
-void evaluate_anfis(Dataset *val_data, ANFISParams *params, double *accuracy, double *error_percent)
+void evaluate_anfis(Dataset *val_data, ANFISParams *params, float *accuracy, float *error_percent)
 {
-    double w[NUM_RULES], y[NUM_RULES];
+    float w[NUM_RULES], y[NUM_RULES];
     int correct_predictions = 0;
-    double total_error_percent = 0.0;
+    float total_error_percent = 0.0;
 
     for (int k = 0; k < val_data->num_samples; k++)
     {
-        double *x = val_data->inputs[k];
+        float *x = val_data->inputs[k];
         int target = val_data->outputs[k];
-        double b;
+        float b;
 
-        double y_pred = calys(x, params, w, y, &b);
+        float y_pred = calys(x, params, w, y, &b);
 
         // Classificação (arredondamento e limitação)
         int y_pred_class = (int)round(y_pred);
@@ -255,7 +255,7 @@ void evaluate_anfis(Dataset *val_data, ANFISParams *params, double *accuracy, do
         total_error_percent += fabs((target - y_pred) / (target + 1e-10));
     }
 
-    *accuracy = ((double)correct_predictions / val_data->num_samples) * 100.0;
+    *accuracy = ((float)correct_predictions / val_data->num_samples) * 100.0;
     *error_percent = (total_error_percent / val_data->num_samples) * 100.0;
 }
 
@@ -331,7 +331,7 @@ void save_params(ANFISParams *params)
 }
 
 // Função para salvar resultados
-void save_results(double *mse_history, double accuracy, double error_percent)
+void save_results(float *mse_history, float accuracy, float error_percent)
 {
     FILE *file = fopen(PATH_TRAINING_RESULTS_CSV, "w");
     if (file)
@@ -351,7 +351,7 @@ void save_results(double *mse_history, double accuracy, double error_percent)
     printf("Histórico de treinamento salvo em: training_results.csv\n");
 }
 
-void randomize_matrix(double inputs[][NUM_FEATURES], int *outputs, int num_samples, Dataset *train_data, Dataset *val_data)
+void randomize_matrix(float inputs[][NUM_FEATURES], int *outputs, int num_samples, Dataset *train_data, Dataset *val_data)
 {
 
     // Embaralhar os índices
